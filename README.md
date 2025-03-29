@@ -1,69 +1,45 @@
-# Welcome to your Lovable project
 
-## Project info
+# PDF Document Annotation Tool
 
-**URL**: https://lovable.dev/projects/3bce622a-2649-4944-a4eb-fdc692b26eab
+A web-based tool for annotating and signing PDF documents.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Upload PDF documents via drag-and-drop or file selection
+- View PDF documents with pagination support
+- Annotate documents with:
+  - Text highlighting with customizable colors
+  - Text underlining with customizable colors
+  - Comments attached to specific parts of the document
+  - Signature drawing directly on the document
+- Export annotated documents as PDFs
 
-**Use Lovable**
+## Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3bce622a-2649-4944-a4eb-fdc692b26eab) and start prompting.
+- React with TypeScript
+- Vite for fast development and building
+- Tailwind CSS for styling
+- PDF.js and React-PDF for rendering PDFs
+- Fabric.js for annotation canvas
+- PDF-lib for document manipulation
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+```bash
+# Install dependencies
+npm install
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Usage
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Upload a PDF document using the drag-and-drop area or file selection button
+2. Use the annotation toolbar on the left side to select annotation tools
+3. Add annotations to the document as needed
+4. Export the document when finished using the download button
 
-**Use GitHub Codespaces**
+## License
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/3bce622a-2649-4944-a4eb-fdc692b26eab) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Created with [Lovable](https://lovable.dev/)

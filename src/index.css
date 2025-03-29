@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +99,80 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* PDF Viewer custom styles */
+.react-pdf__Page {
+  @apply flex justify-center items-center;
+}
+
+.react-pdf__Page__canvas {
+  @apply shadow-md;
+}
+
+.react-pdf__Document {
+  @apply w-full flex justify-center;
+}
+
+/* Custom transitions for annotation tools */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.annotation-transition {
+  animation: fade-in 0.2s ease-out;
+}
+
+.tool-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+.tool-active {
+  @apply bg-primary text-primary-foreground;
+}
+
+/* Annotations */
+.highlight {
+  position: absolute;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.underline {
+  position: absolute;
+  height: 2px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.comment-marker {
+  position: absolute;
+  z-index: 2;
+  cursor: pointer;
+  animation: scale-in 0.2s ease-out;
+}
+
+.signature-canvas {
+  position: absolute;
+  z-index: 3;
+  touch-action: none;
 }
