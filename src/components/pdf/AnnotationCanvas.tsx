@@ -40,19 +40,36 @@ const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   }, [fabricLoaded]);
 
   useEffect(() => {
-    if (fabricCanvasRef.current) {
-      try {
-        fabricCanvasRef.current.isDrawingMode = activeTool === 'signature';
-        
-        if (activeTool === 'highlight' || activeTool === 'underline') {
-          fabricCanvasRef.current.freeDrawingBrush.color = activeColor;
-          fabricCanvasRef.current.freeDrawingBrush.width = activeTool === 'highlight' ? 20 : 2;
+    if (!fabricCanvasRef.current) return;
+    
+    try {
+      // Set drawing mode based on the active tool
+      if (activeTool === 'signature') {
+        fabricCanvasRef.current.isDrawingMode = true;
+        fabricCanvasRef.current.freeDrawingBrush.width = 2;
+        fabricCanvasRef.current.freeDrawingBrush.color = activeColor;
+      } else if (activeTool === 'highlight') {
+        fabricCanvasRef.current.isDrawingMode = true;
+        fabricCanvasRef.current.freeDrawingBrush.width = 20;
+        fabricCanvasRef.current.freeDrawingBrush.color = activeColor;
+        // Set opacity for highlight effect
+        if (fabricCanvasRef.current.freeDrawingBrush.opacity !== undefined) {
+          fabricCanvasRef.current.freeDrawingBrush.opacity = 0.5;
         }
-      } catch (error) {
-        console.error('Error updating canvas drawing mode:', error);
+      } else if (activeTool === 'underline') {
+        fabricCanvasRef.current.isDrawingMode = true;
+        fabricCanvasRef.current.freeDrawingBrush.width = 2;
+        fabricCanvasRef.current.freeDrawingBrush.color = activeColor;
+      } else {
+        fabricCanvasRef.current.isDrawingMode = false;
       }
+      
+      fabricCanvasRef.current.renderAll();
+    } catch (error) {
+      console.error('Error updating canvas drawing mode:', error);
     }
     
+    // Update canvas pointer events
     if (containerRef.current) {
       const canvas = containerRef.current.querySelector('canvas');
       if (canvas) {
@@ -62,31 +79,32 @@ const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   }, [activeTool, activeColor, containerRef, fabricCanvasRef]);
 
   useEffect(() => {
-    if (fabricCanvasRef.current && pageWidth && pageHeight) {
-      try {
-        fabricCanvasRef.current.setDimensions({
-          width: pageWidth * scale,
-          height: pageHeight * scale
+    if (!fabricCanvasRef.current || !pageWidth || !pageHeight) return;
+    
+    try {
+      // Set dimensions according to scale
+      fabricCanvasRef.current.setDimensions({
+        width: pageWidth * scale,
+        height: pageHeight * scale
+      });
+      
+      // Scale all objects
+      const objects = fabricCanvasRef.current.getObjects();
+      if (objects && Array.isArray(objects)) {
+        objects.forEach((obj: any) => {
+          if (obj) {
+            obj.scaleX = scale;
+            obj.scaleY = scale;
+            obj.left = obj.left ? obj.left * scale : 0;
+            obj.top = obj.top ? obj.top * scale : 0;
+            obj.setCoords();
+          }
         });
-        
-        // Scale all objects
-        const objects = fabricCanvasRef.current.getObjects();
-        if (objects && Array.isArray(objects)) {
-          objects.forEach((obj: any) => {
-            if (obj) {
-              obj.scaleX = scale;
-              obj.scaleY = scale;
-              obj.left = obj.left ? obj.left * scale : 0;
-              obj.top = obj.top ? obj.top * scale : 0;
-              obj.setCoords();
-            }
-          });
-        }
-        
-        fabricCanvasRef.current.renderAll();
-      } catch (error) {
-        console.error('Error scaling canvas:', error);
       }
+      
+      fabricCanvasRef.current.renderAll();
+    } catch (error) {
+      console.error('Error scaling canvas:', error);
     }
   }, [scale, pageWidth, pageHeight, fabricCanvasRef]);
 
@@ -113,7 +131,8 @@ const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       canvasEl.style.position = 'absolute';
       canvasEl.style.top = '0';
       canvasEl.style.left = '0';
-      canvasEl.style.pointerEvents = isAnnotating ? 'auto' : 'none';
+      canvasEl.style.pointerEvents = isAnnotating || activeTool !== 'none' ? 'auto' : 'none';
+      canvasEl.style.zIndex = '10'; // Ensure canvas is above PDF but below UI elements
       
       // Find and safely remove the old canvas
       const oldCanvas = containerRef.current.querySelector('#annotation-canvas');
@@ -130,31 +149,45 @@ const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       containerRef.current.appendChild(canvasEl);
 
       // Initialize Fabric.js canvas using the imported module
-      const { Canvas } = fabricModuleRef.current;
-      
-      if (!Canvas) {
-        console.error('Fabric Canvas constructor not found. Make sure fabric.js is loaded correctly.');
-        return;
-      }
-      
       try {
-        const canvas = new Canvas(canvasEl, {
+        // Check if the Canvas constructor exists
+        if (!fabricModuleRef.current.Canvas) {
+          throw new Error('Fabric Canvas constructor not found');
+        }
+        
+        const canvas = new fabricModuleRef.current.Canvas(canvasEl, {
           width: pageWidth * scale || 100, // Fallback dimensions if pageWidth is not set yet
           height: pageHeight * scale || 100,
           backgroundColor: 'transparent',
+          selection: false, // Disable selection by default for drawing tools
         });
 
+        // Store the canvas
         fabricCanvasRef.current = canvas;
         
-        // Set brush options
+        // Initialize brush settings
         if (canvas.freeDrawingBrush) {
           canvas.freeDrawingBrush.color = activeColor;
-          canvas.freeDrawingBrush.width = 2;
-          canvas.isDrawingMode = activeTool === 'signature';
+          canvas.freeDrawingBrush.width = activeTool === 'highlight' ? 20 : 2;
+          // Set opacity for highlight effect if supported by the brush
+          if (canvas.freeDrawingBrush.opacity !== undefined && activeTool === 'highlight') {
+            canvas.freeDrawingBrush.opacity = 0.5;
+          }
         }
+        
+        // Set the drawing mode based on active tool
+        canvas.isDrawingMode = activeTool === 'signature' || 
+                              activeTool === 'highlight' || 
+                              activeTool === 'underline';
 
-        // Notify parent component
+        // Add event listeners for mouse interactions
+        canvas.on('mouse:down', () => {
+          console.log('Canvas mouse down with tool:', activeTool);
+        });
+
+        // Notify parent component the canvas is ready
         onInitialized();
+        console.log('Fabric canvas initialized successfully with tool:', activeTool);
       } catch (error) {
         console.error('Error initializing Fabric canvas:', error);
       }

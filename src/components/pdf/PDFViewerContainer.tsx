@@ -32,6 +32,17 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const fabricCanvasRef = useRef<any>(null);
 
+  // Set drawing mode based on the active tool
+  useEffect(() => {
+    setIsDrawingMode(activeTool === 'signature' || 
+                     activeTool === 'highlight' || 
+                     activeTool === 'underline');
+    
+    if (activeTool !== 'none' && fabricLoaded) {
+      toast.info(`${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} tool activated`);
+    }
+  }, [activeTool, fabricLoaded]);
+
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     toast.success(`Document loaded with ${numPages} pages`);
@@ -52,7 +63,7 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
   };
   
   const renderComments = () => {
-    // Comments are now rendered by the CommentOverlay component
+    console.log('Canvas initialized, comments can now be rendered');
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
