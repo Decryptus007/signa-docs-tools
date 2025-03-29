@@ -3,12 +3,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import { fabric } from 'fabric';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+// Import fabric dynamically to avoid SSR issues
+let fabric: any;
+if (typeof window !== 'undefined') {
+  import('fabric').then((module) => {
+    fabric = module;
+  });
+}
 
 interface PDFViewerProps {
   file: File | null;
@@ -23,12 +30,23 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
   const [pageHeight, setPageHeight] = useState<number>(0);
   const [scale, setScale] = useState<number>(1.0);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+  const fabricCanvasRef = useRef<any>(null);
   const [isDrawingMode, setIsDrawingMode] = useState<boolean>(false);
   const [isAnnotating, setIsAnnotating] = useState<boolean>(false);
   const [comments, setComments] = useState<Array<{ left: number; top: number; text: string }>>([]);
   const [commentText, setCommentText] = useState<string>('');
   const [commentPosition, setCommentPosition] = useState<{ left: number; top: number } | null>(null);
+  const [fabricLoaded, setFabricLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Check if fabric has been loaded
+    if (typeof window !== 'undefined' && !fabricLoaded) {
+      import('fabric').then((module) => {
+        fabric = module;
+        setFabricLoaded(true);
+      });
+    }
+  }, [fabricLoaded]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -46,11 +64,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
       setScale(newScale * 0.95); // 95% of container width
     }
 
-    initializeCanvas();
+    if (fabricLoaded) {
+      initializeCanvas();
+    }
   };
 
   const initializeCanvas = () => {
-    if (!canvasContainerRef.current) return;
+    if (!canvasContainerRef.current || !fabric) return;
 
     // Clean up previous canvas if it exists
     if (fabricCanvasRef.current) {
@@ -173,8 +193,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, [pageWidth]);
 
   // Update canvas dimensions when scale changes
@@ -186,7 +208,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
       });
       
       // Scale all objects
-      fabricCanvasRef.current.getObjects().forEach((obj) => {
+      fabricCanvasRef.current.getObjects().forEach((obj: any) => {
         obj.scaleX = scale;
         obj.scaleY = scale;
         obj.left = obj.left ? obj.left * scale : 0;
@@ -198,6 +220,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
       renderComments();
     }
   }, [scale]);
+
+  // Initialize canvas when fabric is loaded
+  useEffect(() => {
+    if (fabricLoaded && pageWidth && pageHeight) {
+      initializeCanvas();
+    }
+  }, [fabricLoaded, pageWidth, pageHeight]);
 
   return (
     <div className="relative w-full h-full">
