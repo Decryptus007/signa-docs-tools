@@ -14,8 +14,16 @@ interface PDFViewerProps {
   activeColor: string;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = (props) => {
-  return <PDFViewerContainer {...props} />;
+const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) => {
+  console.log('PDFViewer rendering with props:', { activeTool, activeColor });
+  
+  return (
+    <PDFViewerContainer 
+      file={file} 
+      activeTool={activeTool} 
+      activeColor={activeColor} 
+    />
+  );
 };
 
 export default PDFViewer;

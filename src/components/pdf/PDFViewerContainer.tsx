@@ -34,9 +34,13 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
 
   // Set drawing mode based on the active tool
   useEffect(() => {
-    setIsDrawingMode(activeTool === 'signature' || 
+    const isDrawing = activeTool === 'signature' || 
                      activeTool === 'highlight' || 
-                     activeTool === 'underline');
+                     activeTool === 'underline';
+    
+    setIsDrawingMode(isDrawing);
+    
+    console.log('Tool changed:', { activeTool, isDrawingMode: isDrawing });
     
     if (activeTool !== 'none' && fabricLoaded) {
       toast.info(`${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} tool activated`);
@@ -49,17 +53,25 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
   };
 
   const handlePageRenderSuccess = (page: any) => {
-    const viewport = page.getViewport({ scale: 1 });
-    setPageWidth(viewport.width);
-    setPageHeight(viewport.height);
-    
-    if (canvasContainerRef.current) {
-      const containerWidth = canvasContainerRef.current.clientWidth;
-      const newScale = containerWidth / viewport.width;
-      setScale(newScale * 0.95); // 95% of container width
-    }
+    try {
+      const viewport = page.getViewport({ scale: 1 });
+      setPageWidth(viewport.width);
+      setPageHeight(viewport.height);
+      
+      if (canvasContainerRef.current) {
+        const containerWidth = canvasContainerRef.current.clientWidth;
+        const newScale = containerWidth / viewport.width;
+        setScale(newScale * 0.95); // 95% of container width
+      }
 
-    setFabricLoaded(true);
+      // Delay setting fabric loaded to ensure the PDF page is fully rendered
+      setTimeout(() => {
+        setFabricLoaded(true);
+        console.log('PDF page rendered, fabric can now be loaded');
+      }, 300);
+    } catch (error) {
+      console.error('Error in page render success handler:', error);
+    }
   };
   
   const renderComments = () => {
@@ -67,6 +79,8 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
+    console.log('Canvas clicked with tool:', activeTool);
+    
     if (activeTool === 'comment' && canvasContainerRef.current) {
       const rect = canvasContainerRef.current.getBoundingClientRect();
       const left = e.clientX - rect.left;
@@ -74,6 +88,7 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
       
       setCommentPosition({ left, top });
       setIsAnnotating(true);
+      console.log('Comment position set:', { left, top });
     }
   };
 
@@ -98,19 +113,23 @@ const PDFViewerContainer: React.FC<PDFViewerContainerProps> = ({
     const handleResize = () => {
       if (canvasContainerRef.current && pageWidth) {
         const containerWidth = canvasContainerRef.current.clientWidth;
-        setScale(containerWidth / pageWidth * 0.95);
+        const newScale = containerWidth / pageWidth * 0.95;
+        setScale(newScale);
+        console.log('Window resized, new scale:', newScale);
       }
     };
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [pageWidth]);
 
   return (
     <div className="relative w-full h-full">
-      <div className="relative w-full" ref={canvasContainerRef}>
+      <div 
+        className="relative w-full" 
+        ref={canvasContainerRef}
+        style={{ cursor: activeTool !== 'none' ? 'crosshair' : 'default' }}
+      >
         <DocumentViewer
           file={file}
           pageNumber={pageNumber}
