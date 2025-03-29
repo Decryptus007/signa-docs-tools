@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -10,12 +9,7 @@ import { Button } from '@/components/ui/button';
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 // Import fabric dynamically to avoid SSR issues
-let fabric: any;
-if (typeof window !== 'undefined') {
-  import('fabric').then((module) => {
-    fabric = module;
-  });
-}
+let fabricModule: any = null;
 
 interface PDFViewerProps {
   file: File | null;
@@ -42,7 +36,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
     // Check if fabric has been loaded
     if (typeof window !== 'undefined' && !fabricLoaded) {
       import('fabric').then((module) => {
-        fabric = module;
+        fabricModule = module;
         setFabricLoaded(true);
       });
     }
@@ -70,7 +64,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
   };
 
   const initializeCanvas = () => {
-    if (!canvasContainerRef.current || !fabric) return;
+    if (!canvasContainerRef.current || !fabricModule) return;
 
     // Clean up previous canvas if it exists
     if (fabricCanvasRef.current) {
@@ -94,7 +88,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
     canvasContainerRef.current.appendChild(canvasEl);
 
     // Initialize Fabric.js canvas
-    const canvas = new fabric.Canvas('annotation-canvas', {
+    // In Fabric v5.x+, we need to use the fabric namespace correctly
+    const { Canvas } = fabricModule;
+    const canvas = new Canvas(canvasEl, {
       width: pageWidth * scale,
       height: pageHeight * scale,
       backgroundColor: 'transparent',
