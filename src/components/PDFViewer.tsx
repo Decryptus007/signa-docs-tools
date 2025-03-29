@@ -85,9 +85,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
     canvasEl.style.left = '0';
     canvasEl.style.pointerEvents = isAnnotating ? 'auto' : 'none';
     
-    // Clear previous canvas
-    const oldCanvas = canvasContainerRef.current.querySelector('canvas');
-    if (oldCanvas) {
+    // Find and safely remove the old canvas
+    const oldCanvas = canvasContainerRef.current.querySelector('#annotation-canvas');
+    if (oldCanvas && oldCanvas.parentNode === canvasContainerRef.current) {
       canvasContainerRef.current.removeChild(oldCanvas);
     }
     
@@ -112,13 +112,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, activeTool, activeColor }) 
   };
 
   const renderComments = () => {
-    if (!fabricCanvasRef.current) return;
+    if (!fabricCanvasRef.current || !canvasContainerRef.current) return;
     
     // Remove existing comment elements
     comments.forEach((comment, index) => {
       const existingComment = document.getElementById(`comment-${index}`);
-      if (existingComment) {
-        existingComment.remove();
+      if (existingComment && existingComment.parentNode === canvasContainerRef.current) {
+        canvasContainerRef.current.removeChild(existingComment);
       }
     });
     
